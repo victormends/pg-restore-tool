@@ -1,5 +1,9 @@
 # PG Restore Tool
 
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![Platform](https://img.shields.io/badge/Platform-Windows-blue)
+![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB)
+
 Windows-first PostgreSQL restore utility for a narrow operational scenario: rebuilding a local or operator-controlled database quickly after workstation failure, reinstall, or environment corruption.
 
 This is not positioned as a production-grade managed restore platform. It is a niche recovery tool built around a real support workflow where the target database is already offline, the operator is present, and the fastest safe-enough rebuild path matters more than broad platform coverage.
@@ -19,7 +23,7 @@ It is intentionally scoped to a narrower problem than cloud backup tooling, PITR
 
 ## Current Status
 
-This version is a publishable niche tool with several hardening improvements already applied:
+Public v0.1.0 is a publishable niche tool with several hardening improvements already applied:
 
 - profile-based restore tuning (`safe`, `fast`, `unsafe`)
 - subprocess-local credential handling in the main restore path
@@ -177,6 +181,47 @@ Do not use this workflow when:
 - the environment requires conservative production-grade recovery controls
 
 This tool is designed for fast rebuild and recovery on Windows, not for live in-place restore under load.
+
+See [`SECURITY.md`](SECURITY.md) for the public security and operational-safety policy.
+
+## Quick Start
+
+Install the project dependencies in a Python 3.11+ environment:
+
+```powershell
+py -m pip install -e .
+```
+
+Review the command line first:
+
+```powershell
+py main.py --help
+```
+
+Run a dry run before any destructive restore:
+
+```powershell
+py main.py --file backup.dump --host 127.0.0.1 --port 5432 --user postgres --db target_db --dry-run
+```
+
+Example restore using the default `fast` profile:
+
+```powershell
+py main.py --file backup.dump --host 127.0.0.1 --port 5432 --user postgres --db target_db
+```
+
+Use `--turbo-mode safe` when durability tradeoffs are not acceptable. Use `--turbo-mode unsafe` only on an isolated restore instance after reviewing the prompt and safety policy.
+
+## Public Release Checklist
+
+Before tagging a public release, verify:
+
+- `py -m compileall .` completes successfully.
+- `py main.py --help` matches the usage examples in this README.
+- The package version in `pyproject.toml` matches the intended release tag.
+- `LICENSE` and `SECURITY.md` are present.
+- A private-string scan finds no client names, credentials, internal hostnames, production database names, or real backup paths.
+- Release notes describe this as an operator-guided Windows restore utility, not a guaranteed production disaster-recovery system.
 
 ## Portfolio Context
 
