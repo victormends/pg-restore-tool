@@ -349,6 +349,12 @@ def restore_tar_dump(pg_bin: str, host: str, port: str, user: str, password: str
                      db_name: str, tar_file: str, jobs: int = 4,
                      process_env: Optional[dict[str, str]] = None,
                      progress_callback: Optional[Callable] = None) -> Tuple[bool, Optional[str], float]:
+    """Restore a `.tar` archive via `pg_restore` in single-threaded mode.
+
+    `pg_restore` does not support `--jobs`/`-j` for tar-format archives; `jobs` is
+    retained in the signature for caller compatibility and intentionally ignored.
+    """
+    _ = jobs
     env = process_env or _build_process_env(password)
 
     start_time = datetime.now()
@@ -359,7 +365,7 @@ def restore_tar_dump(pg_bin: str, host: str, port: str, user: str, password: str
         
         result = subprocess.run(
             [str(pg_restore_path), '-U', user, '-h', host, '-p', port,
-             '-d', db_name, '-j', str(jobs), '--verbose', '--no-owner', '--no-acl', tar_file],
+             '-d', db_name, '--verbose', '--no-owner', '--no-acl', tar_file],
             capture_output=True,
             text=True,
             timeout=3600,
@@ -419,7 +425,9 @@ def get_restore_command(pg_bin: str, backup_type: str, host: str, port: str, use
         return [str(Path(pg_bin) / psql_bin), '-v', 'ON_ERROR_STOP=1', '-U', user, '-h', host, '-p', port, '-d', db_name, '-f', backup_path]
     else:
         base = [str(Path(pg_bin) / pg_restore_bin), '-U', user, '-h', host, '-p', port, '-d', db_name]
-        base.extend(['-j', str(jobs), '--no-owner', '--no-acl', backup_path])
+        if backup_type != 'tar':
+            base.extend(['-j', str(jobs)])
+        base.extend(['--no-owner', '--no-acl', backup_path])
     
     return base
 

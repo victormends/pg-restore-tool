@@ -132,3 +132,78 @@ def test_estimate_size_and_restore_progress():
     assert stats["is_running"] is True
     prog.stop()
     assert prog.get_stats()["is_running"] is False
+
+
+def test_restore_parallel_jobs_flag_by_format(monkeypatch):
+    popen_calls: List[List[str]] = []
+    run_calls: List[List[str]] = []
+
+    class FakeStderr:
+        def readline(self) -> str:
+            return ""
+
+    class FakePopen:
+        def __init__(self, cmd, **kwargs):
+            popen_calls.append(cmd)
+            self.stderr = FakeStderr()
+            self.returncode = 0
+
+        def poll(self):
+            return 0
+
+        def wait(self):
+            return 0
+
+    def fake_run(cmd, **kwargs):
+        run_calls.append(cmd)
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(restore_engine.subprocess, "Popen", FakePopen)
+    monkeypatch.setattr(restore_engine.subprocess, "run", fake_run)
+
+    ok_custom, err_custom, _ = restore_engine.restore_custom_dump(
+        pg_bin="/usr/bin",
+        host="127.0.0.1",
+        port="5432",
+        user="postgres",
+        password="pw",
+        db_name="target_db",
+        dump_file="backup.dump",
+        jobs=4,
+    )
+    assert ok_custom is True
+    assert err_custom is None
+    assert "-j" in popen_calls[-1]
+    idx_custom = popen_calls[-1].index("-j")
+    assert popen_calls[-1][idx_custom + 1] == "4"
+
+    ok_dir, err_dir, _ = restore_engine.restore_directory(
+        pg_bin="/usr/bin",
+        host="127.0.0.1",
+        port="5432",
+        user="postgres",
+        password="pw",
+        db_name="target_db",
+        backup_dir="backup_dir",
+        jobs=6,
+    )
+    assert ok_dir is True
+    assert err_dir is None
+    assert "-j" in run_calls[-1]
+    idx_dir = run_calls[-1].index("-j")
+    assert run_calls[-1][idx_dir + 1] == "6"
+
+    ok_tar, err_tar, _ = restore_engine.restore_tar_dump(
+        pg_bin="/usr/bin",
+        host="127.0.0.1",
+        port="5432",
+        user="postgres",
+        password="pw",
+        db_name="target_db",
+        tar_file="backup.tar",
+        jobs=4,
+    )
+    assert ok_tar is True
+    assert err_tar is None
+    assert "-j" not in run_calls[-1]
+    assert not any(arg.startswith("--jobs") for arg in run_calls[-1])
