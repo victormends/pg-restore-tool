@@ -12,9 +12,9 @@ PostgreSQL restore CLI and TUI for Windows hosts supporting `pg_restore -j` para
 
 This tool originated in a multi-database Windows PostgreSQL support fleet where rebuilding local and branch databases quickly and repeatably was a recurring operational need.
 
-In the original environment, migrating from single-threaded restores to parallel directory-format restores (`pg_restore -j 4`) paired with session-scoped `synchronous_commit=off` and elevated `maintenance_work_mem` reduced typical restore times from `~17 min` to `~7 min`. Alongside those restore improvements, separate `pg_class`/`pg_toast` catalog audits traced `~1 GB/month` of anomalous table growth to serialized audit logs.
+In the original environment, migrating from single-threaded restores to parallel directory-format restores (`pg_restore -j 4`) combined with session-scoped tuning (`synchronous_commit=off`, elevated `maintenance_work_mem`) reduced typical restore times from `~17 min` to `~7 min`. Individual contributions of `-j 4` versus session tuning were not benchmarked separately, and field timings reflect the original support fleet rather than reproducible benchmarks from this standalone repository.
 
-Note that the catalog bloat diagnostics were separate SQL operational queries not bundled in this CLI, and the field timings reflect the original support fleet rather than reproducible benchmarks from this standalone repository.
+Alongside those restore improvements, separate `pg_class`/`pg_toast` catalog audits traced `~1 GB/month` of anomalous table growth to serialized audit logs. A read-only version of that table and TOAST storage growth audit query (distinct from dead-tuple table bloat measurement) is included at [`sql/pg_toast_growth_audit.sql`](sql/pg_toast_growth_audit.sql).
 
 ---
 
