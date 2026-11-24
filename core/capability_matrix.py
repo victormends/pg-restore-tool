@@ -31,17 +31,17 @@ def build_capability_matrix(env_result) -> CapabilityMatrix:
     pg_tools = getattr(env_result, 'pg_tools_available', {})
     for pg_bin, tools in pg_tools.items():
         if isinstance(tools, dict):
-            if tools.get('pg_restore.exe', False):
+            if tools.get('pg_restore.exe', False) or tools.get('pg_restore', False):
                 can_restore_custom = True
                 can_restore_tar = True
                 can_restore_dir = True
                 can_parallel_restore = True
                 max_parallel_jobs = 8
             
-            if tools.get('psql.exe', False):
+            if tools.get('psql.exe', False) or tools.get('psql', False):
                 can_restore_sql = True
                 
-            if tools.get('pg_dump.exe', False):
+            if tools.get('pg_dump.exe', False) or tools.get('pg_dump', False):
                 can_backup_before_restore = True
     
     can_use_keyring = False
@@ -55,7 +55,7 @@ def build_capability_matrix(env_result) -> CapabilityMatrix:
     for pg_path in env_result.pg_installations:
         try:
             import re
-            match = re.search(r'PostgreSQL[\\/](\d+)', pg_path)
+            match = re.search(r'PostgreSQL[\\/](\d+)', pg_path, re.IGNORECASE)
             if match:
                 versions.append(match.group(1))
         except Exception:

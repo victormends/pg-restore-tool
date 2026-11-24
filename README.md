@@ -212,6 +212,15 @@ py main.py --file backup.dump --host 127.0.0.1 --port 5432 --user postgres --db 
 
 Use `--turbo-mode safe` when durability tradeoffs are not acceptable. Use `--turbo-mode unsafe` only on an isolated restore instance after reviewing the prompt and safety policy.
 
+## Testing
+
+Run the unit test suite (`pytest` covers restore profiles, subprocess credential isolation, backup type detection, capability discovery, and `.pgpass` / profile matching):
+
+```powershell
+$env:PYTHONPATH = "."
+pytest -v
+```
+
 ## Public Release Checklist
 
 Before tagging a public release, verify:
